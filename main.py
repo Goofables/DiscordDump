@@ -137,8 +137,8 @@ def insert(query: str, data, db, cursor):
         # exit(0)
 
 
-def dump(token, name):
-    api = APIUtil(token)
+def dump(token, name, bot=True):
+    api = APIUtil(token, bot)
     db, cursor = init_db()
     print(f"\nStarting dump for {name}")
     start_time = time()
@@ -180,7 +180,7 @@ def dump(token, name):
             if channel['id'] in dumped_channels:
                 continue
             New.channels += 1
-            print(f"Bot {name} Guild {guild['name']} Channel {channel['name']} ({channel['id']})")
+            # print(f"Bot {name} Guild {guild['name']} Channel {channel['name']} ({channel['id']})")
             insert(querys['channel'], (
                 channel['id'], channel['guild_id'], channel['name'], channel.get('topic', None), channel['nsfw'],
                 channel.get('last_message_id', None), channel['type']), db, cursor)
@@ -245,11 +245,20 @@ if __name__ == '__main__':
         p = Process(target=dump, args=(t, creds[t]))
         p.start()
         processes.append(p)
-        # break
-
-    for p in processes:
-        print(f"Processes remaining: {len(processes)}")
-        p.join()
+    # for t in creds['user']:
+    #     p = Process(target=dump, args=(t, creds['user'][t], False))
+    #     p.start()
+    #     processes.append(p)
+    while True:
+        for p in processes:
+            if p.is_alive():
+                continue
+            else:
+                p.join()
+                processes.remove(p)
+                print(f"Processes remaining: {len(processes)}")
+        if len(processes) == 0:
+            break
     print(f"Total time elapsed: {round(time() - START_TIME, 2)}")
     print(
         f"Guilds: {Totals.guilds} Channels: {Totals.channels} Messages: +{Totals.new_messages} > {Totals.messages} Users: {Totals.users}")
